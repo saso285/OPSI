@@ -37,12 +37,12 @@ class Database(object):
             return True
 
         except sqlite3.Error as er:
-            print er.message
+            print(er.message)
             return False
 
         finally:
             con.close()
-            
+
     def select_one(self, query):
         """ Return single select query result
         :param query: database query
@@ -58,7 +58,7 @@ class Database(object):
             return cursor.fetchone()
 
         except sqlite3.Error as er:
-            print er.message
+            print(er.message)
             return []
 
         finally:
@@ -79,7 +79,7 @@ class Database(object):
             return cursor.fetchall()
 
         except sqlite3.Error as er:
-            print er.message
+            print(er.message)
             return []
 
         finally:
@@ -101,7 +101,7 @@ class Database(object):
             return True
 
         except sqlite3.Error as er:
-            print er.message
+            print(er.message)
             return False
 
         finally:

@@ -10,7 +10,6 @@ __version__ = "1.0.0"
 import json
 import requests
 
-from lxml import html
 from bs4 import BeautifulSoup
 
 from constants.urls import Urls
@@ -20,7 +19,7 @@ class Response(object):
 
     def __init__(self, status, text=""):
         """ Response object for passing the request information
-        :param status: boolean whether the request succeeded or not 
+        :param status: boolean whether the request succeeded or not
         :param text: parsed html of the webpage
         :type status: boolean
         :type text: string
@@ -36,7 +35,7 @@ class Parse(object):
         """ Get the html of a specific webpage
         :param url: url of the webpage
         :type url: string
-        :return: response object containing boolean on whether the parse request 
+        :return: response object containing boolean on whether the parse request
                  succeeded and the html of the webpage
         :rtype: object
         """
@@ -44,14 +43,14 @@ class Parse(object):
             return Response(True, requests.get(url).text.encode('UTF-8'))
 
         except requests.exceptions.RequestException as error:
-            print error
+            print(error)
             return Response(False)
 
     def get_soup(self, url):
         """ Return soup of the html
         :param url: url of the webpage
         :type url: string
-        :return: response object containing boolean on whether the parse request 
+        :return: response object containing boolean on whether the parse request
                  succeeded and the html of the webpage
         :rtype: object
         """
@@ -103,7 +102,7 @@ class Parse(object):
                 dataset_list.append((name, label))
 
             return dataset_list
-            
+
         return []
 
     def dataset(self, name):

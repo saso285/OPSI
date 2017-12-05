@@ -9,44 +9,22 @@ __version__ = "1.0.0"
 
 class Query(object):
 
-	############################################################################
-	#																		   #
-	# DATASET QUERIES														   #
-	#																		   #
-	############################################################################
+    SELECT_FIELD = """SELECT {} FROM Field {}"""
+    INSERT_FIELD = """INSERT INTO Field VALUES(null, '{}','{}')"""
+    UPDATE_FIELD = """UPDATE Field SET name='{}', link='{}')"""
+    DELETE_FIELD = """DELETE FROM Field WHERE {}"""
 
-	SELECT_DATASET = """SELECT * FROM Dataset
-	WHERE name='{0}'"""
+    SELECT_TYPE = """SELECT {} FROM Type {}"""
+    INSERT_TYPE = """INSERT INTO Type VALUES(null, '{}')"""
+    UPDATE_TYPE = """UPDATE Type SET name='{}'"""
+    DELETE_TYPE = """DELETE FROM Type WHERE {}"""
 
-	INSERT_DATASET = """INSERT INTO Dataset
-	(name, metadata, type, views, created, modified, field_id) 
-	VALUES({0},{1},{2},{3},{4},{5},{6})"""
+    SELECT_FILE = """SELECT {} FROM File {}"""
+    INSERT_FILE = """INSERT INTO File VALUES(null, '{}','{}','{}')"""
+    UPDATE_FILE = """UPDATE File SET name='{}, type='{}', content='{}'"""
+    DELETE_FILE = """DELETE FROM File WHERE {}"""
 
-	UPDATE_DATASET = """UPDATE Dataset
-	SET name='{1}', metadata='{2}', type='{3}', views='{4}', created='{5}', 
-	modified='{6}', field_id='{7}' 
-	WHERE id='{0}'"""
-
-	DELETE_DATASET = """DELETE FROM Dataset 
-	WHERE id='{0}'"""
-
-
-	############################################################################
-	#																		   #
-	# FIELD QUERIES														       #
-	#																		   #
-	############################################################################
-
-	SELECT_FIELD = """SELECT * FROM Field
-	WHERE name='{0}'"""
-
-	INSERT_FIELD = """INSERT INTO Field
-	(name, views, created, modified) 
-	VALUES({0},{1},{2},{3})"""
-
-	UPDATE_FIELD = """UPDATE Field
-	SET name='{1}', views='{2}', created='{3}', modified='{4}' 
-	WHERE id='{0}'"""
-
-	DELETE_FIELD = """DELETE FROM Field 
-	WHERE id='{0}'"""
+    SELECT_DATASET = """SELECT {} FROM Dataset {}"""
+    INSERT_DATASET = """INSERT INTO Dataset VALUES(null, '{}','{}','{}')"""
+    UPDATE_DATASET = """UPDATE Dataset SET name='{}', link='{}'"""
+    DELETE_DATASET = """DELETE FROM Dataset WHERE {}"""
