@@ -85,7 +85,7 @@ def timestamp():
 
 
 def log_to_db(data):
-    query = '''INSERT INTO DatabaseLog Values(null, "%s", "%s", "%s", "%s", "%s", "%s");'''
+    query = '''INSERT INTO Error Values(null, "%s", "%s", "%s", "%s", "%s", "%s");'''
     try:
         db = get_db()
         conn = db.cursor()

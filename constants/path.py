@@ -9,4 +9,5 @@ __version__ = "1.0.0"
 
 class Path(object):
 
-    DATABASE = './database.db'
+    # DATABASE = './database.db'
+    DATABASE = './test.db'

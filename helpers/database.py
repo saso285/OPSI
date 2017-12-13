@@ -55,7 +55,7 @@ class Database(object):
         try:
             cursor = con.cursor()
             cursor.execute(query)
-            return cursor.fetchone()
+            return cursor.fetchone()[0]
 
         except sqlite3.Error as er:
             print(er.message)
@@ -76,7 +76,7 @@ class Database(object):
         try:
             cursor = con.cursor()
             cursor.execute(query)
-            return cursor.fetchall()
+            return [item[0] for item in cursor.fetchall()]
 
         except sqlite3.Error as er:
             print(er.message)
