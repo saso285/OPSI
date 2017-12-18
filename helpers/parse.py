@@ -42,8 +42,8 @@ class Parse(object):
         try:
             return Response(True, requests.get(url).text.encode('UTF-8'))
 
-        except requests.exceptions.RequestException as error:
-            print(error)
+        except requests.exceptions.RequestException as er:
+            print(er)
             return Response(False)
 
     def get_soup(self, url):

@@ -9,26 +9,13 @@ __version__ = "1.0.0"
 
 import os
 
-from flask import Flask, jsonify, redirect, request, render_template
+from flask import Flask, jsonify, redirect, render_template, request
 
 from helpers.parse import Parse
 
-
-###############################################################################
-#                                                                             #
-# VARIABLE INITIALIZATION                                                     #
-#                                                                             #
-###############################################################################
-
 app = Flask(__name__)
-port = int(os.getenv('PORT', 3000))
+PORT = int(os.getenv('PORT', 3000))
 
-
-###############################################################################
-#                                                                             #
-# REST ENDPOINT REDIRECTIONS                                                  #
-#                                                                             #
-###############################################################################
 
 @app.route('/')
 def index():
@@ -80,11 +67,5 @@ def catch_all(path):
     return redirect('/', code=302)
 
 
-###############################################################################
-#                                                                             #
-# MAIN EXECUTION AND TERMINATION                                              #
-#                                                                             #
-###############################################################################
-
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=port, debug=True)
+    app.run(host='127.0.0.1', port=PORT, debug=True)

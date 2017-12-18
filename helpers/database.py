@@ -37,7 +37,7 @@ class Database(object):
             return True
 
         except sqlite3.Error as er:
-            print(er.message)
+            print(er)
             return False
 
         finally:
@@ -58,7 +58,7 @@ class Database(object):
             return cursor.fetchone()[0]
 
         except sqlite3.Error as er:
-            print(er.message)
+            print(er)
             return []
 
         finally:
@@ -79,7 +79,7 @@ class Database(object):
             return [item[0] for item in cursor.fetchall()]
 
         except sqlite3.Error as er:
-            print(er.message)
+            print(er)
             return []
 
         finally:
@@ -101,7 +101,7 @@ class Database(object):
             return True
 
         except sqlite3.Error as er:
-            print(er.message)
+            print(er)
             return False
 
         finally:

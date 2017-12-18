@@ -1,13 +1,20 @@
 # -*- coding: utf-8 -*-
 
+__author__ = "Saso Maric"
+__copyright__ = "Copyright 2017, by Saso Maric"
+__email__ = "sm8024@student.uni-lj.si"
+__status__ = "Development"
+__version__ = "1.0.0"
+
+
 from helpers.database import Database
 from constants.query import Query
 
-db = Database()
+DB = Database()
 
 
 def dataset_num():
-    return db.select_one(Query.SELECT_COUNT_DATASET)
+    return DB.select_one(Query.SELECT_COUNT_DATASET)
 
 
 def type_percentage(typ):
@@ -19,15 +26,15 @@ def error_percentage():
 
 
 def error_count():
-    return db.select_one(Query.SELECT_COUNT_ERROR)
+    return DB.select_one(Query.SELECT_COUNT_ERROR)
 
 
 def all_type():
-    return db.select(Query.SELECT_ALL_TYPE)
+    return DB.select(Query.SELECT_ALL_TYPE)
 
 
 def type_count(typ):
-    return db.select_one(Query.SELECT_COUNT_TYPE.format(typ))
+    return DB.select_one(Query.SELECT_COUNT_TYPE.format(typ))
 
 
 # Test
