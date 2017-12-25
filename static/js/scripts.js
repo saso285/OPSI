@@ -26,7 +26,7 @@ $(document).ready(function() {
         return response;
     }
 
-    function ajaxGetPostRequest(url, data) {
+    function ajaxPostHttpRequest(url, data) {
         var response;
         $.ajax({
             type: 'POST',
@@ -100,11 +100,11 @@ $(document).ready(function() {
         tree.on("select_node.jstree", function(e, data) {
             if (!data.node.state.opened) {
                 if (data.node.parent === '#' && data.node.children.length == 0) {
-                    ajaxGetPostRequest('/fields', {'url': data.node.data.url}).result.forEach(function(elem) {
+                    ajaxPostHttpRequest('/fields', {'url': data.node.data.url}).result.forEach(function(elem) {
                         tree.jstree("create_node", '#' + data.node.id, {'text': elem[0], 'data': {'label': elem[1], 'type': 'folder'}});
                     });
                 } else if (data.node.data.type === 'folder' && data.node.children.length === 0) {
-                    var resp = ajaxGetPostRequest('/field', data.node.data).result;
+                    var resp = ajaxPostHttpRequest('/field', data.node.data).result;
                     var json;
                     resp.resources.forEach(function(item) {
                         var subJson;

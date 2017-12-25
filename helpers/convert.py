@@ -8,10 +8,13 @@ __version__ = "1.0.0"
 
 
 import os
+import urllib3
 
 import xlrd
 
 import docx
+import helpers.log as Log
+from helpers.data import Data
 from PyPDF2 import PdfFileReader
 
 
@@ -24,8 +27,10 @@ class Convert(object):
         extension = filename.split('.')[-1]
         if 'xls' in extension:
             return self.excel_text(filename)
+
         elif 'doc' in extension:
             return self.document_text(filename)
+
         elif 'pdf' in extension:
             return self.pdf_text(filename)
 
@@ -35,19 +40,39 @@ class Convert(object):
         :param filename: name of the file
         :return: string as csv
         """
+        path = filename.split('/')[-3:]
+        data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
+                    link='/'.join(path[-3:]))
         excel_content = []
-        workbook = xlrd.open_workbook(filename)
-        for sheet_name in workbook.sheet_names():
-            sheet = workbook.sheet_by_name(sheet_name)
-            line = []
-            for row in range(sheet.nrows):
-                line = [str(item) for item in sheet.row_values(row) if item]
-                if line:
-                    excel_content.append(line)
-        # max_len = max(len(item) for item in excel_content)
-        # excel_content = [item for item in excel_content if len(item) == max_len]
-        text = [','.join(item) for item in excel_content]
-        return '\n'.join(text).replace('"', '\'').strip() or None
+        try:
+            workbook = xlrd.open_workbook(filename)
+            for sheet_name in workbook.sheet_names():
+                sheet = workbook.sheet_by_name(sheet_name)
+                line = []
+                for row in range(sheet.nrows):
+                    line = [str(item)
+                            for item in sheet.row_values(row) if item]
+                    if line:
+                        excel_content.append(line)
+
+            excel_content = [','.join(item) for item in excel_content]
+
+        except xlrd.formula.FormulaError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
+        except xlrd.biffh.XLRDError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
+        except ValueError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
+        return '\n'.join(excel_content).replace('"', '\'').strip() or None
 
     @staticmethod
     def document_text(filename):
@@ -55,11 +80,24 @@ class Convert(object):
         :param filename: name of the file
         :return: string as txt
         """
+        path = filename.split('/')[-3:]
+        data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
+                    link='/'.join(path[-3:]))
         document_content = ""
-        document = docx.Document(filename)
-        for row in document.paragraphs:
-            if row.text:
-                document_content += row.text
+        try:
+            document = docx.Document(filename)
+            for row in document.paragraphs:
+                if row.text:
+                    document_content += row.text
+
+        except docx.opc.exceptions.PackageNotFoundError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+
+        except ValueError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+
         return document_content.replace('"', '\'').strip() or None
 
     @staticmethod
@@ -68,14 +106,32 @@ class Convert(object):
         :param filename: name of the file
         :return: string as txt
         """
+        path = filename.split('/')[-3:]
+        data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
+                    link='/'.join(path[-3:]))
         pdf_content = ""
         try:
             input_file = open(filename, "rb")
             reader = PdfFileReader(input_file, strict=False)
             for page in range(0, reader.getNumPages()):
                 pdf_content += reader.getPage(page).extractText()
+
         except IOError as er:
+            Log.write_log_to_db(data, er)
             print(er)
+
+        except ValueError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+
+        except urllib3.exceptions.ProtocolError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+
+        except ConnectionError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+
         return pdf_content.replace('"', '\'').strip() or None
 
 

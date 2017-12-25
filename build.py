@@ -10,36 +10,25 @@ __version__ = "1.0.0"
 import json
 import os
 import sqlite3
-import time
+import ssl
 import zipfile
 
 import requests
 from bs4 import BeautifulSoup
 
+import helpers.timestamp as Timestamp
+from constants.path import Path
 from helpers.convert import Convert
+from helpers.data import Data
+from helpers.database import Database
 
 OPSI_LINK = 'https://podatki.gov.si'
 OPSI_METADATA_LINK = 'https://podatki.gov.si/api/3/action/package_show?id='
 
 CONVERT = Convert()
+DATABASE = Database()
 
-
-class Data(object):
-
-    def __init__(self, name=None, field=None, link=None, typ=None, content=None, update=None):
-        self.name = name
-        self.field = field
-        self.link = link
-        self.type = typ
-        self.content = content
-        self.update = update
-
-
-def get_db():
-    """ Get database connection
-    :return: connection object
-    """
-    return sqlite3.connect('test.db')
+ssl._create_default_https_context = ssl._create_unverified_context
 
 
 def get_html(link):
@@ -47,7 +36,11 @@ def get_html(link):
     :param link: link to website
     :return: html string
     """
-    return requests.get(link).text
+    try:
+        return requests.get(link).text
+
+    except ConnectionResetError as er:
+        print(er)
 
 
 def get_file(link):
@@ -55,7 +48,11 @@ def get_file(link):
     :param filename: link of the file
     :return: file content string
     """
-    return requests.get(link).content
+    try:
+        return requests.get(link).content
+
+    except ConnectionResetError as er:
+        print(er)
 
 
 def archived(filename):
@@ -75,123 +72,43 @@ def unzip(filename):
     return {name: input_zip.read(name) for name in input_zip.namelist()}
 
 
-def download_dir():
-    """ Get download directory of user
-    :return: path string
-    """
-    return os.path.expanduser("~") + "/Downloads/"
-
-
 def write_to_file(filepath, content):
     """ Write content to a file
     :param filepath: path to the file
     :param content: content of the file
     """
-    file_path = os.path.join(download_dir() + filepath)
+    file_path = os.path.join(Path.DOWNLOAD_DIR + filepath)
 
     with open(file_path, 'wb') as f:
         f.write(content)
 
 
-def append_to_file(filepath, content):
-    """ Append content to a file
-    :param filepath: path to the file
-    :param content: content of the file
+def last_update_ready(now, last):
+    """ Check if timestamp 'now' is bigger than 'last'
+    :return: timestamp 'now' bigger than 'last' condition boolean
     """
-    file_path = os.path.join(download_dir() + filepath)
-
-    with open(file_path, 'wb') as f:
-        f.write(content)
+    return now > last
 
 
-def write_log_to_file(filename, content):
-    """ Write content to a log file
-    :param filepath: path to the file
-    :param content: content of the file
+def dataset_source_exists(dataset_name):
+    """ Execute query to check if dataset source exists
+    :param dataset_name: name of the dataset
+    :return: source exists boolean
     """
-    append_to_file(filename, content)
+    query = '''SELECT COUNT(1) FROM Dataset WHERE name="%s"'''
+    db = DATABASE.select_one(query % dataset_name)
+    return True if result else False
 
 
-def write_log_to_db(data, error):
-    """ Write content to a log table in database
-    :param data: data object
-    :param error: error type
+def dataset_source_updated(dataset_name, now_timestamp):
+    """ Execute query to check if dataset source has been updated
+    :param dataset_name: name of the dataset
+    :param now_timestamp: latest update timestamp
+    :return: dataset ready to be updated boolean
     """
-    data.content = error
-    data.timestamp = timestamp()
-    data.dataset = data.name
-    log_to_db(data)
-
-
-def timeout(sec):
-    """ Sleep for a certain amount of time
-    :param sec: number of seconds to sleep
-    """
-    time.sleep(sec)
-
-
-def timestamp():
-    """ Get unix epoch timestamp
-    :return: timestamp integer
-    """
-    return int(time.time())
-
-
-def log_to_db(data):
-    """ Execute query to log data in database
-    :param data: data object 
-    :return: insert success boolean
-    """
-    query = '''INSERT INTO Error Values(null, "%s", "%s", "%s", "%s", "%s", "%s");'''
-
-    try:
-        db = get_db()
-        conn = db.cursor()
-        conn.execute(query % (data.type, data.content, data.timestamp,
-                              data.field, data.dataset, data.link))
-        db.commit()
-        return True
-
-    except sqlite3.Error as er:
-        print("log to db", e)
-        return False
-
-    finally:
-        db.close()
-
-
-def write_to_db(data):
-    """ Execute query to insert data in database
-    :param data: data object 
-    :return: insert success boolean
-    """
-    query = '''INSERT INTO Dataset Values(null, "%s", "%s", "%s", "%s", "%s", "%s");'''
-
-    try:
-        db = get_db()
-        conn = db.cursor()
-        conn.execute(query % (data.name, data.field, data.link,
-                              data.type, data.content, data.update))
-        db.commit()
-        return True
-
-    except sqlite3.Error as e:
-        print("write to db", e)
-        write_log_to_db(data, e)
-        return False
-
-    except sqlite3.OperationalError as e:
-        print("write to db", e)
-        write_log_to_db(data, e)
-        return False
-
-    except ValueError as e:
-        print("write to db", e)
-        write_log_to_db(data, e)
-        return False
-
-    finally:
-        db.close()
+    query = '''SELECT last_update FROM Dataset WHERE name="%s"'''
+    last_update = DATABASE.select_one(query % dataset_name)
+    return last_update_ready(now_timestamp, last_update)
 
 
 def write_to_cache(meta, metadata_json, field_name):
@@ -213,20 +130,20 @@ def write_to_cache(meta, metadata_json, field_name):
     create_dir(dataset[:255])
     filename = dataset + '/' + filename
     write_to_file(filename, get_file(meta['url']))
-    return download_dir() + filename
+    return Path.DOWNLOAD_DIR + filename
 
 
 def create_dir(dirname):
     """ Create a new directory if it doesn't already exist
     :param dirname: name of the new directory
     """
-    if not os.path.exists(os.path.join(download_dir() + dirname)):
-        os.makedirs(os.path.join(download_dir() + dirname))
+    if not os.path.exists(os.path.join(Path.DOWNLOAD_DIR + dirname)):
+        os.makedirs(os.path.join(Path.DOWNLOAD_DIR + dirname))
 
 
-def filetype_known(extension):    
+def filetype_known(extension):
     """ Check if filetype is associated with the known ones
-    :param extension: extension of a file 
+    :param extension: extension of a file
     :return: extension known conditon boolean
     """
     return extension in known_filetypes
@@ -234,7 +151,7 @@ def filetype_known(extension):
 
 def filetype_convertable(extension):
     """ Check if filetype is associated with the ones that must be converted
-    :param extension: extension of a file 
+    :param extension: extension of a file
     :return: extension has to be converted conditon boolean
     """
     return extension in convertables
@@ -246,8 +163,8 @@ def exception(er, metadata_link):
     :param metadata_link: link to the requested file
     :return: repeated requests content string
     """
-    print("exception", e)
-    timeout(60)
+    print(e)
+    Timestamp.timeout(60)
     return json.loads(get_html(metadata_link))
 
 
@@ -256,14 +173,14 @@ soup = BeautifulSoup(html, 'lxml')
 
 archives = ['zip', 'gz', 'bz2', 'rar']
 
-known_filetypes = ['csv', 'json', 'pcaxis', 'px',
-                   'xls', 'xlsx', 'doc', 'docx', 'pdf', 'txt']
+known_filetypes = ['csv', 'json', 'xls',
+                   'xlsx', 'doc', 'docx', 'rdf',  'pdf', 'txt']
 
 convertables = ['xls', 'xlsx', 'doc', 'docx', 'pdf']
 
 unknown_filetypes = set()
 
-for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[-5:]: # OD FINANC NAPREJ!!!
+for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[2:]:
     href = field.find('a').get('href')
     field_name = href.split('=')[-1]
     link = OPSI_LINK + href + "&page={0}"
@@ -286,15 +203,15 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[-5:]: # O
                 metadata_json = json.loads(get_html(metadata_link))
 
             except requests.exceptions.HTTPError as e:
-                print("main HTTPError", e)
+                print(e)
                 metadata_json = exception(e, metadata_link)
 
             except requests.exceptions.ConnectionError as e:
-                print("main ConnectionError", e)
+                print(e)
                 metadata_json = exception(e, metadata_link)
 
             except requests.exceptions.ConnectTimeout as e:
-                print("main ConnectTimeout", e)
+                print()
                 metadata_json = exception(e, metadata_link)
 
             dataset_title = metadata_json['result']['title']
@@ -320,7 +237,7 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[-5:]: # O
 
                     data = Data(dataset_title, field_name, meta['url'],
                                 meta['format'], content, meta['qa']['updated'])
-                    print(write_to_db(data))
+                    print(DATABASE.write_to_db(data))
 
                 else:
                     unknown_filetypes.add(meta['format'].lower().strip())

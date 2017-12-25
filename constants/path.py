@@ -6,8 +6,10 @@ __email__ = "sm8024@student.uni-lj.si"
 __status__ = "Development"
 __version__ = "1.0.0"
 
+import os
+
 
 class Path(object):
 
-    # DATABASE = './database.db'
     DATABASE = './test.db'
+    DOWNLOAD_DIR = os.path.expanduser("~") + "/Downloads/"

@@ -11,23 +11,22 @@ import sqlite3
 
 from constants.path import Path
 
+import helpers.log as Log
+
 
 class Database(object):
 
     @staticmethod
     def get_db():
-        """ Opens a new database connection for the current application context.
-        :return: sqlite3 database connection
-        :rtype: object
+        """ Get database connection
+        :return: connection object
         """
         return sqlite3.connect(Path.DATABASE)
 
     def create_table(self, query):
         """ Create new table in database
         :param query: database query
-        :type query: string
         :return: status whether query executions succeed or not
-        :rtype: boolean
         """
         con = self.get_db()
 
@@ -46,9 +45,7 @@ class Database(object):
     def select_one(self, query):
         """ Return single select query result
         :param query: database query
-        :type query: string
         :return: list with a single select query result
-        :rtype: list
         """
         con = self.get_db()
 
@@ -67,9 +64,7 @@ class Database(object):
     def select(self, query):
         """ Return all select query results
         :param query: database query
-        :type query: string
         :return: list of all select query results
-        :rtype: list
         """
         con = self.get_db()
 
@@ -88,9 +83,7 @@ class Database(object):
     def insert(self, query):
         """ Return boolean whether insert query succeeds
         :param query: database query
-        :type query: string
         :return: status whether query executions succeed or not
-        :rtype: boolean
         """
         con = self.get_db()
 
@@ -110,17 +103,46 @@ class Database(object):
     def update(self, query):
         """ Call insert function as update
         :param query: database query
-        :type query: string
         :return: insert function
-        :rtype: def
         """
         return self.insert(query)
 
     def delete(self, query):
         """ Call insert function as delete
         :param query: database query
-        :type query: string
         :return: insert function
-        :rtype: def
         """
         return self.insert(query)
+
+    def write_to_db(self, data):
+        """ Execute query to insert data in database
+        :param data: data object
+        :return: insert success boolean
+        """
+        query = '''INSERT INTO Dataset Values(null, "%s", "%s", "%s", "%s", "%s", "%s");'''
+
+        try:
+            db = self.get_db()
+            conn = db.cursor()
+            conn.execute(query % (data.name, data.field, data.link,
+                                  data.type, data.content, data.update))
+            db.commit()
+            return True
+
+        except sqlite3.Error as er:
+            print(er)
+            Log.write_log_to_db(data, er)
+            return False
+
+        except sqlite3.OperationalError as er:
+            print(er)
+            Log.write_log_to_db(data, er)
+            return False
+
+        except ValueError as er:
+            print(er)
+            Log.write_log_to_db(data, er)
+            return False
+
+        finally:
+            db.close()
