@@ -11,5 +11,10 @@ import os
 
 class Path(object):
 
-    DATABASE = './test.db'
+    ROOT_DIR = os.path.dirname(os.path.abspath("server.py"))
     DOWNLOAD_DIR = os.path.expanduser("~") + "/Downloads/"
+
+    DATABASE = ROOT_DIR + '/database.db'
+    DATABASE_SQL = ROOT_DIR + '/database.sql'
+
+    PIP_URL = 'https://bootstrap.pypa.io/get-pip.py'

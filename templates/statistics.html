@@ -20,15 +20,22 @@
 
 <body>
 	<div class="container">
-		<h1>Statistika</h1>
+		<h1>OPSI data pull statistics</h1>
 		<div class="row">
 			<div class="col-lg-6">
 				<div id="typePercentageChart" style="height: 300px; width: 100%;"></div>
 			</div>
+			<div class="col-lg-6">
+				<div id="errorPercentageChart" style="height: 300px; width: 100%;"></div>
+			</div>
 		</div>
 		<div class="row">
 			<div class="col-lg-6">
-				<div id="errorPercentageChart" style="height: 300px; width: 100%;"></div>
+				<div id="unknownExtensionChart" style="height: 300px; width: 100%;"></div>
+			</div>
+			<div class="col-lg-6">
+				<p id="heading">Data accessible from OPSI</p>
+				<div id="container"></div>
 			</div>
 		</div>
 	</div>
@@ -36,6 +43,7 @@
 
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/jquery.canvasjs.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/progressbar.min.js') }}"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='js/statistics.js') }}"></script>
 
 </html>

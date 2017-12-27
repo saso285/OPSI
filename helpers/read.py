@@ -7,7 +7,8 @@ __status__ = "Development"
 __version__ = "1.0.0"
 
 
-class Urls(object):
+class Read(object):
 
-    MAIN_URL = 'https://podatki.gov.si'
-    API_SEARCH = 'https://podatki.gov.si/api/3/action/package_show?id='
+    @staticmethod
+    def file(filename):
+        return str(open(filename, 'r').read())

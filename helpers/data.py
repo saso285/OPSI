@@ -9,8 +9,8 @@ __version__ = "1.0.0"
 
 class Data(object):
 
-    def __init__(self, name=None, field=None, link=None,
-                 typ=None, content=None, update=None, dataset=None):
+    def __init__(self, name=None, field=None, link=None, typ=None, 
+                 content=None, update=None, dataset=None):
         self.name = name
         self.field = field
         self.link = link

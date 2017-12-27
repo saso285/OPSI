@@ -6,7 +6,7 @@ __email__ = "sm8024@student.uni-lj.si"
 __status__ = "Development"
 __version__ = "1.0.0"
 
-
+import http
 import json
 import os
 import sqlite3
@@ -14,21 +14,24 @@ import ssl
 import zipfile
 
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 
+import helpers.log as Log
 import helpers.timestamp as Timestamp
 from constants.path import Path
+from constants.query import Query
+from constants.urls import Urls
 from helpers.convert import Convert
 from helpers.data import Data
 from helpers.database import Database
 
-OPSI_LINK = 'https://podatki.gov.si'
-OPSI_METADATA_LINK = 'https://podatki.gov.si/api/3/action/package_show?id='
-
 CONVERT = Convert()
 DATABASE = Database()
 
-ssl._create_default_https_context = ssl._create_unverified_context
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36'
+}
 
 
 def get_html(link):
@@ -36,10 +39,14 @@ def get_html(link):
     :param link: link to website
     :return: html string
     """
+    name = link.split('/')[-1].split('.')[0]
+    typ = link.split('/')[-1].split('.')[-1]
+    data = Data(name, field="None", link=link, typ=typ)
     try:
-        return requests.get(link).text
+        return requests.get(link, headers=headers).text
 
-    except ConnectionResetError as er:
+    except Exception as er:
+        Log.write_log_to_db(data, er)
         print(er)
 
 
@@ -48,10 +55,14 @@ def get_file(link):
     :param filename: link of the file
     :return: file content string
     """
+    name = link.split('/')[-1].split('.')[0]
+    typ = link.split('/')[-1].split('.')[-1]
+    data = Data(name, field="None", link=link, typ=typ)
     try:
-        return requests.get(link).content
+        return requests.get(link, headers=headers).content
 
-    except ConnectionResetError as er:
+    except Exception as er:
+        Log.write_log_to_db(data, er)
         print(er)
 
 
@@ -78,37 +89,41 @@ def write_to_file(filepath, content):
     :param content: content of the file
     """
     file_path = os.path.join(Path.DOWNLOAD_DIR + filepath)
+    name = link.split('/')[-1].split('.')[0]
+    typ = filepath.split('/')[-1].split('.')[-1]
+    field = link.split('/')[0]
+    data = Data(filepath, field="None", link=file_path, typ=typ)
 
-    with open(file_path, 'wb') as f:
-        f.write(content)
+    try:
+        with open(file_path.strip(), 'wb') as f:
+            f.write(bytes(content))
+
+    except TypeError as er:
+        Log.write_log_to_db(data, er)
+        print(er)
 
 
-def last_update_ready(now, last):
-    """ Check if timestamp 'now' is bigger than 'last'
-    :return: timestamp 'now' bigger than 'last' condition boolean
-    """
-    return now > last
-
-
-def dataset_source_exists(dataset_name):
+def dataset_source_exists(dataset_name, dataset_link):
     """ Execute query to check if dataset source exists
     :param dataset_name: name of the dataset
     :return: source exists boolean
     """
-    query = '''SELECT COUNT(1) FROM Dataset WHERE name="%s"'''
-    db = DATABASE.select_one(query % dataset_name)
-    return True if result else False
+    res = DATABASE.select_one(
+        Query.SELECT_DATASET_EXISTS.format(dataset_name, dataset_link))
+    print(res, dataset_name)
+    return True if res else False
 
 
-def dataset_source_updated(dataset_name, now_timestamp):
+def dataset_source_updated(dataset_name, current_id):
     """ Execute query to check if dataset source has been updated
     :param dataset_name: name of the dataset
-    :param now_timestamp: latest update timestamp
+    :param new_timestamp: latest update timestamp
     :return: dataset ready to be updated boolean
     """
-    query = '''SELECT last_update FROM Dataset WHERE name="%s"'''
-    last_update = DATABASE.select_one(query % dataset_name)
-    return last_update_ready(now_timestamp, last_update)
+    revision_id = DATABASE.select_one(
+        Query.SELECT_DATASET_LAST_REVISION.format(dataset_name))
+    print(current_id, revision_id)
+    return current_id != revision_id
 
 
 def write_to_cache(meta, metadata_json, field_name):
@@ -168,25 +183,43 @@ def exception(er, metadata_link):
     return json.loads(get_html(metadata_link))
 
 
-html = get_html(OPSI_LINK)
+def start_data_pull():
+    """ Insert data pull start time into database
+    :return: insert query success
+    """
+    return DATABASE.insert(Query.INSERT_START_DATA_PULL.format(
+        Timestamp.timestamp()))
+
+
+def end_data_pull():
+    """ Update data pull finish time in database
+    :return: update query success
+    """
+    return DATABASE.insert(Query.UPDATE_START_DATA_PULL.format(
+        DB.select_one(Query.DATABASE.SELECT_LAST_DATA_PULL)))
+
+
+html = get_html(Urls.MAIN_URL)
 soup = BeautifulSoup(html, 'lxml')
 
 archives = ['zip', 'gz', 'bz2', 'rar']
 
-known_filetypes = ['csv', 'json', 'xls',
-                   'xlsx', 'doc', 'docx', 'rdf',  'pdf', 'txt']
+known_filetypes = ['csv', 'json', 'xls', 'xlsx', 'doc', 'docx', 'pdf', 'txt']
 
 convertables = ['xls', 'xlsx', 'doc', 'docx', 'pdf']
 
-unknown_filetypes = set()
+if not DATABASE.database_exists():
+    DATABASE.create_database()
 
-for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[2:]:
+start_data_pull()
+
+for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li'):
     href = field.find('a').get('href')
     field_name = href.split('=')[-1]
-    link = OPSI_LINK + href + "&page={0}"
+    link = Urls.MAIN_URL + href + "&page={0}"
     print("#" * 80)
     print("#", field_name)
-    print("#", OPSI_LINK + href)
+    print("#", Urls.MAIN_URL + href)
     print("#" * 80)
     print("\r")
     page_count = 1
@@ -197,7 +230,7 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[2:]:
         div = page.find('div', attrs={'class': 'padding up down'})
 
         for a in div.findAll('a', attrs={'class': 'dataset-header'}):
-            metadata_link = OPSI_METADATA_LINK + a.get('href').split('/')[-1]
+            metadata_link = Urls.API_SEARCH + a.get('href').split('/')[-1]
 
             try:
                 metadata_json = json.loads(get_html(metadata_link))
@@ -235,12 +268,19 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[2:]:
                     else:
                         content = get_html(meta['url']).replace('"', '\'')
 
-                    data = Data(dataset_title, field_name, meta['url'],
-                                meta['format'], content, meta['qa']['updated'])
-                    print(DATABASE.write_to_db(data))
+                    if not dataset_source_exists(dataset_title, meta['url']) or\
+                            dataset_source_exists(dataset_title, meta['url']) and\
+                            dataset_source_updated(dataset_title, meta['revision_id']):
+                        data = Data(dataset_title, field_name, meta['url'],
+                                    meta['format'], content,
+                                    meta['revision_id'])
+                        print(DATABASE.write_to_db(data))
 
                 else:
-                    unknown_filetypes.add(meta['format'].lower().strip())
+                    DATABASE.insert(Query.INSERT_UNKNOWN_EXTENSION.format(
+                        extension, meta['format'].lower().strip()))
+
             print()
-        print(unknown_filetypes, "\n")
         page_count += 1
+
+end_data_pull()

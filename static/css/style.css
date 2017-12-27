@@ -5,3 +5,17 @@ h1 {
 #modal-timestamp {
     float:right;
 }
+
+#container {
+    align-content: center;
+    margin: 32.5px auto;
+    width: 175px;
+    height: 175px;
+    position: relative;
+  }
+  
+#heading {
+    text-align: center;
+    font-size: 25px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}

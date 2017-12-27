@@ -38,7 +38,7 @@ def statistics():
 @app.route('/statistics/error', methods=['GET'])
 def error_percentage():
     """ Return the percentage of file saving or converting errors
-    :return: percentage float
+    :return: array of dictionaries with labels and percents
     """
     error_percentage = Statistics.error_percentage()
     error = [{'label': 'complete', 'y': "{0:.2f}".format(
@@ -50,15 +50,34 @@ def error_percentage():
 
 
 @app.route('/statistics/types', methods=['GET'])
-def types_percentage():
-    """ Return the precentage of each type occurence
-    :return: percentage float tuple array
+def type_count():
+    """ Return the count of each type occurence
+    :return: array of dictionaries with labels and counts
     """
     types = []
     for typ in Statistics.all_type():
-        types.append({'label': typ.lower(), 'y':
-                      "{0:.2f}".format(Statistics.type_percentage(typ) * 100)})
+        types.append({'label': typ.lower(), 'y': Statistics.type_count(typ)})
     return jsonify(result=types)
+
+
+@app.route('/statistics/extension', methods=['GET'])
+def unknown_extension_count():
+    """ Return the count of each unknown extension occurence
+    :return: array of dictionaries with labels and percents
+    """
+    extensions = []
+    for ext in Statistics.all_unknown_extension():
+        extensions.append(
+            {'label': ext, 'y': Statistics.count_unknown_extension(ext)})
+    return jsonify(result=extensions)
+
+
+@app.route('/statistics/accessible', methods=['GET'])
+def data_pull_success():
+    """ Return the data about all data pulls
+    :return: float data pull success percentage
+    """
+    return jsonify(result=Statistics.accessible_data())
 
 
 @app.route('/fields', methods=['GET'])

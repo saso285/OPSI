@@ -50,6 +50,7 @@ $(document).ready(function() {
         ex.core = {'check_callback': true};
         ex.core.data = [];
         ajaxGetHttpRequest('/fields').result.forEach(function(elem) {
+            console.log(elem);
             ex.core.data.push(
             {
                 'text': elem[0],

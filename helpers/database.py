@@ -7,36 +7,44 @@ __status__ = "Development"
 __version__ = "1.0.0"
 
 
+import os
 import sqlite3
 
-from constants.path import Path
-
 import helpers.log as Log
+from constants.path import Path
+from helpers.read import Read
 
 
 class Database(object):
+
+    @staticmethod
+    def database_exists():
+        return os.path.exists(Path.DATABASE)
 
     @staticmethod
     def get_db():
         """ Get database connection
         :return: connection object
         """
-        return sqlite3.connect(Path.DATABASE)
-
-    def create_table(self, query):
-        """ Create new table in database
-        :param query: database query
-        :return: status whether query executions succeed or not
-        """
-        con = self.get_db()
-
         try:
+            return sqlite3.connect(Path.DATABASE)
+
+        except sqlite3.Error as e:
+            print(e)
+
+    def create_database(self):
+        """ Restore database from './database_sql' file
+        :param database_sql: a CREATE DATABASE sql file content
+        :return: 
+        """
+        try:
+            con = self.get_db()
             cursor = con.cursor()
-            cursor.execute(query)
+            cursor.executescript(Read.file(Path.DATABASE_SQL))
             return True
 
-        except sqlite3.Error as er:
-            print(er)
+        except sqlite3.Error as e:
+            print(e)
             return False
 
         finally:
