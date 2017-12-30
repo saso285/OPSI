@@ -66,6 +66,14 @@ def type_count(typ):
     return DB.select_one(Query.SELECT_COUNT_TYPE.format(typ))
 
 
+def field_type_count(field):
+    type_count = []
+    for typ in DB.select(Query.SELECT_ALL_TYPE_FORMAT):
+        type_count.append({'label': typ, 'y': DB.select(
+            Query.SELECT_COUNT_TYPE_FIELD.format(typ, field.encode('utf-8')))})
+    return type_count
+
+
 def accessible_data():
     """ Get data pull success rate percentage
     :return: float data pull success rate percentage

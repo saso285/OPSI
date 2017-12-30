@@ -50,10 +50,9 @@ $(document).ready(function() {
         ex.core = {'check_callback': true};
         ex.core.data = [];
         ajaxGetHttpRequest('/fields').result.forEach(function(elem) {
-            console.log(elem);
             ex.core.data.push(
             {
-                'text': elem[0],
+                'text': elem,
                 'state':
                 {
                     'opened': false,
@@ -61,7 +60,7 @@ $(document).ready(function() {
                 'children': [],
                 "data":
                 {
-                    'url': elem[1]
+                    'field': elem
                 }
             }); 
         });
@@ -81,18 +80,17 @@ $(document).ready(function() {
     }
 
     function create_modal(data) {
-        console.log(data.node.data)
         modalTitle.empty();
         modalTitle.text(data.node.text);
         modalTag.empty();
         modalTag.text(data.node.data.format);
         modalTimestamp.empty();
-        modalTimestamp.text(data.node.data.timestamp);
+        modalTimestamp.text(data.node.data.revision_id);
         modalBody.empty();
         modalBody.append('<p id="modal-description"></p>');
         $('#modal-description').text(data.node.data.notes);
         if (data.node.data.name != undefined) {
-            modalBody.append('<a href="' + data.node.data.url + '">' + data.node.data.name + '</a><br>');
+            modalBody.append('<a href="/file/' + data.node.data.name + '">' + data.node.data.name + '</a><br>');
         }
         modal.modal('show');
     }
@@ -101,25 +99,19 @@ $(document).ready(function() {
         tree.on("select_node.jstree", function(e, data) {
             if (!data.node.state.opened) {
                 if (data.node.parent === '#' && data.node.children.length == 0) {
-                    ajaxPostHttpRequest('/fields', {'url': data.node.data.url}).result.forEach(function(elem) {
-                        tree.jstree("create_node", '#' + data.node.id, {'text': elem[0], 'data': {'label': elem[1], 'type': 'folder'}});
+                    ajaxPostHttpRequest('/fields', {'field': data.node.data.field}).result.forEach(function(elem) {
+                        tree.jstree("create_node", '#' + data.node.id, {'text': elem, 'data': {'label': elem, 'type': 'folder'}});
                     });
                 } else if (data.node.data.type === 'folder' && data.node.children.length === 0) {
-                    var resp = ajaxPostHttpRequest('/field', data.node.data).result;
+                    var resp = ajaxPostHttpRequest('/files', data.node.data).result;
                     var json;
-                    resp.resources.forEach(function(item) {
+                    resp.forEach(function(item) {
                         var subJson;
-                        var name = item.name || item.description;
-                        var timestamp = "";
-                        if (resp.revision_timestamp != undefined) {
-                            timestamp = resp.revision_timestamp.split("T")[0].split("-");
-                            timestamp = "Last revision: " + timestamp[2] + "." + timestamp[1] + "." + timestamp[0];
-                        }
-                        subJson = {'type': 'file', 'notes': resp.notes, 'url': item.url, 'name': name, 'format': item.format, 'timestamp': timestamp}
-                        json = {'text': name, 'icon': 'jstree-file', 'data': subJson};
+                        subJson = {'type': 'file', 'url': item.url, 'name': item.name, 'format': item.type, 'revision_id': item.revision_id}
+                        json = {'text': item.name, 'icon': 'jstree-file', 'data': subJson};
                         tree.jstree("create_node", '#' + data.node.id, json);
                     });
-                    if (resp.resources.length === 0) {
+                    if (resp.length === 0) {
                         data.node.data.notes = resp.notes;
                         create_modal(data);
                     }

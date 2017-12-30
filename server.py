@@ -10,10 +10,10 @@ __version__ = "1.0.0"
 import json
 import os
 
-from flask import Flask, jsonify, redirect, render_template, request
+from flask import Flask, Response, jsonify, redirect, render_template, request
 
 import helpers.statistics as Statistics
-from helpers.parse import Parse
+from helpers.tree import Tree
 
 app = Flask(__name__)
 PORT = int(os.getenv('PORT', 3000))
@@ -33,6 +33,15 @@ def statistics():
     :return: html of index file
     """
     return render_template('statistics.html'), 200
+
+
+@app.route('/statistics/field', methods=['POST'])
+def field():
+    """ Return the statistics.html to client
+    :return: html of index file
+    """
+    data = request.get_json()
+    return jsonify(result=Statistics.field_type_count(data['field']))
 
 
 @app.route('/statistics/error', methods=['GET'])
@@ -85,7 +94,7 @@ def get_fields():
     """ Return all fields from OPSI
     :return: json containing list of all fields and their relative urls
     """
-    return jsonify(result=Parse().fields())
+    return jsonify(result=Tree.fields())
 
 
 @app.route('/fields', methods=['POST'])
@@ -94,16 +103,27 @@ def get_datasets():
     :return: json containing list of all datasets and their relative urls
     """
     data = request.get_json()
-    return jsonify(result=Parse().datasets(data['url']))
+    return jsonify(result=Tree.datasets(data['field']))
 
 
-@app.route('/field', methods=['POST'])
+@app.route('/files', methods=['POST'])
 def get_dataset():
     """ Return all info about specific dataset from OPSI
     :return: json containing all information about specific dataset
     """
     data = request.get_json()
-    return jsonify(Parse().dataset(data['label']))
+    return jsonify(result=Tree.files(data['label']))
+
+
+@app.route('/file/<filename>', methods=['GET'])
+def get_file(filename):
+    """ Return all info about specific dataset from OPSI
+    :return: json containing all information about specific dataset
+    """
+    content = Tree.file_content(filename)
+    file_name = "attachment;filename={0}".format(filename)
+    return Response(content, mimetype="text/plain",
+                    headers={"Content-Disposition": file_name})
 
 
 @app.route('/<path:path>')

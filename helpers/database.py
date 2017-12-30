@@ -88,6 +88,25 @@ class Database(object):
         finally:
             con.close()
 
+    def select_many(self, query):
+        """ Return all select query results
+        :param query: database query
+        :return: list of all select query results
+        """
+        con = self.get_db()
+
+        try:
+            cursor = con.cursor()
+            cursor.execute(query)
+            return cursor.fetchall()
+
+        except sqlite3.Error as er:
+            print(er)
+            return []
+
+        finally:
+            con.close()
+
     def insert(self, query):
         """ Return boolean whether insert query succeeds
         :param query: database query
@@ -127,13 +146,14 @@ class Database(object):
         :param data: data object
         :return: insert success boolean
         """
-        query = '''INSERT INTO Dataset Values(null, "%s", "%s", "%s", "%s", "%s", "%s");'''
+        query = '''INSERT INTO Dataset Values(null, "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");'''
 
         try:
             db = self.get_db()
             conn = db.cursor()
-            conn.execute(query % (data.name, data.field, data.link,
-                                  data.type, data.content, data.update))
+            conn.execute(query % (data.name, data.field, data.link, data.type,
+                                  data.parsed_type, data.filename, data.content, 
+                                  data.update))
             db.commit()
             return True
 

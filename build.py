@@ -178,7 +178,7 @@ def exception(er, metadata_link):
     :param metadata_link: link to the requested file
     :return: repeated requests content string
     """
-    print(e)
+    print(er)
     Timestamp.timeout(60)
     return json.loads(get_html(metadata_link))
 
@@ -204,16 +204,26 @@ soup = BeautifulSoup(html, 'lxml')
 
 archives = ['zip', 'gz', 'bz2', 'rar']
 
-known_filetypes = ['csv', 'json', 'xls', 'xlsx', 'doc', 'docx', 'pdf', 'txt']
+known_filetypes = ['csv', 'xls', 'xlsx', 'doc', 'docx', 'pdf', 'txt']
 
 convertables = ['xls', 'xlsx', 'doc', 'docx', 'pdf']
+
+remap = {
+    'csv': 'csv',
+    'xls': 'csv',
+    'xlsx': 'csv',
+    'txt': 'txt',
+    'pdf': 'txt',
+    'doc': 'txt',
+    'docx': 'txt'
+}
 
 if not DATABASE.database_exists():
     DATABASE.create_database()
 
 start_data_pull()
 
-for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li'):
+for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[5:]:
     href = field.find('a').get('href')
     field_name = href.split('=')[-1]
     link = Urls.MAIN_URL + href + "&page={0}"
@@ -235,17 +245,21 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li'):
             try:
                 metadata_json = json.loads(get_html(metadata_link))
 
-            except requests.exceptions.HTTPError as e:
-                print(e)
-                metadata_json = exception(e, metadata_link)
+            except requests.exceptions.HTTPError as er:
+                print(er)
+                metadata_json = exception(er, metadata_link)
 
-            except requests.exceptions.ConnectionError as e:
-                print(e)
-                metadata_json = exception(e, metadata_link)
+            except requests.exceptions.ConnectionError as er:
+                print(er)
+                metadata_json = exception(er, metadata_link)
 
-            except requests.exceptions.ConnectTimeout as e:
-                print()
-                metadata_json = exception(e, metadata_link)
+            except requests.exceptions.ConnectTimeout as er:
+                print(er)
+                metadata_json = exception(er, metadata_link)
+
+            except TypeError as er:
+                print(er)
+                metadata_json = exception(er, metadata_link)
 
             dataset_title = metadata_json['result']['title']
             print(dataset_title)
@@ -254,33 +268,44 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li'):
                 extension = meta['url'].split('.')[-1].lower().strip()
 
                 if filetype_known(extension):
-                    print("[%s] - '%s' - " % (extension, meta['url']), end="")
+                    print("[%s] - '%s' - " %
+                          (remap[extension], meta['url']), end="")
 
                     filename = write_to_cache(meta, metadata_json, field_name)
 
                     if archived(meta['url']):
-                        # content = unzip(get_html(meta['url']))
+                        DATABASE.insert(Query.INSERT_UNKNOWN_EXTENSION.format(
+                            dataset_title, field_name, extension,
+                            remap[meta['format'].lower().strip()]))
                         continue
 
                     if filetype_convertable(extension):
                         content = CONVERT.get_text(filename)
 
                     else:
-                        content = get_html(meta['url']).replace('"', '\'')
+                        if extension == "csv":
+                            content = CONVERT.parse_csv_table(
+                                get_html(meta['url']).replace('"', '\''))
+                        else:
+                            content = get_html(meta['url']).replace('"', '\'')
 
                     if not dataset_source_exists(dataset_title, meta['url']) or\
                             dataset_source_exists(dataset_title, meta['url']) and\
                             dataset_source_updated(dataset_title, meta['revision_id']):
-                        data = Data(dataset_title, field_name, meta['url'],
-                                    meta['format'], content,
-                                    meta['revision_id'])
+                        ext = remap[meta['url'].split('.')[-1].lower().strip()]
+                        file_name = meta['url'].split('/')[-1].split('.')[0]
+                        file_name = "%s.%s" % (file_name, ext)
+                        data = Data(name=dataset_title, field=field_name, link=meta['url'],
+                                    typ=meta['format'].lower().strip(),
+                                    parsed_type=remap[extension],
+                                    content=content, update=meta['revision_id'],
+                                    filename=file_name)
                         print(DATABASE.write_to_db(data))
 
                 else:
                     DATABASE.insert(Query.INSERT_UNKNOWN_EXTENSION.format(
-                        extension, meta['format'].lower().strip()))
+                        dataset_title, field_name, extension,
+                        meta['format'].lower().strip()))
 
             print()
         page_count += 1
-
-end_data_pull()

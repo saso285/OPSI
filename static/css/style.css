@@ -19,3 +19,12 @@ h1 {
     font-size: 25px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
 }
+
+#fieldsList {
+    margin: 10px auto;
+    display: block;
+}
+
+#fieldsChart {
+    display: None;
+}

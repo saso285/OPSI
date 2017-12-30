@@ -34,8 +34,7 @@ class Convert(object):
         elif 'pdf' in extension:
             return self.pdf_text(filename)
 
-    @staticmethod
-    def excel_text(filename):
+    def excel_text(self, filename):
         """ Return the excel based file as csv string
         :param filename: name of the file
         :return: string as csv
@@ -46,15 +45,15 @@ class Convert(object):
         excel_content = []
         try:
             workbook = xlrd.open_workbook(filename)
-            for sheet_name in workbook.sheet_names():
-                sheet = workbook.sheet_by_name(sheet_name)
-                line = []
-                for row in range(sheet.nrows):
-                    line = [str(item)
-                            for item in sheet.row_values(row) if item]
-                    if line:
-                        excel_content.append(line)
+            sheet_name = workbook.sheet_names()
+            sheet = workbook.sheet_by_name(sheet_name[0])
+            line = []
+            for row in range(sheet.nrows):
+                line = [str(item) for item in sheet.row_values(row) if item]
+                if line:
+                    excel_content.append(line)
 
+            excel_content = self.parse_csv_table(excel_content)
             excel_content = [','.join(item) for item in excel_content]
 
         except xlrd.formula.FormulaError as er:
@@ -73,6 +72,28 @@ class Convert(object):
             return None
 
         return '\n'.join(excel_content).replace('"', '\'').strip() or None
+
+    @staticmethod
+    def parse_csv_table(excel_list):
+        lens = [len(row) for row in excel_list]
+        new_idx = max_idx = 0
+        new_len = max_len = 0
+        curr = lens[0]
+
+        for elem in lens:
+            if elem == curr:
+                new_len += 1
+                if max_len < new_len:
+                    max_len, max_idx = new_len, new_idx
+
+            else:
+                if max_len < new_len:
+                    max_len, max_idx = new_len, new_idx
+
+                new_idx, new_len = lens.index(elem), 1
+                curr = elem
+
+        return excel_list[max_idx:max_idx+max_len]
 
     @staticmethod
     def document_text(filename):
@@ -121,6 +142,11 @@ class Convert(object):
             print(er)
 
         except ValueError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            print(er)
+
+        except KeyError as er:
             Log.write_log_to_db(data, er)
             print(er)
 
