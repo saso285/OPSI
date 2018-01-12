@@ -9,6 +9,7 @@ __version__ = "1.0.0"
 
 import os
 import urllib3
+import datetime
 
 import xlrd
 
@@ -27,6 +28,9 @@ class Convert(object):
         extension = filename.split('.')[-1]
         if 'xls' in extension:
             return self.excel_text(filename)
+
+        elif 'csv' in extension:
+            return self.csv_text(filename)
 
         elif 'doc' in extension:
             return self.document_text(filename)
@@ -73,27 +77,120 @@ class Convert(object):
 
         return '\n'.join(excel_content).replace('"', '\'').strip() or None
 
+    def csv_text(self, filename):
+        csv_content = []
+        path = filename.split('/')[-3:]
+        data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
+                    link='/'.join(path[-3:]))
+        try:
+            f = open(filename)
+            csv_content = f.readlines()
+            csv_table, delimiter = self.strip_table(csv_content)
+            csv_table = self.set_column_types(self.parse_csv_table(csv_table))
+            string = '\n'.join([delimiter.join(row) for row in csv_table])
+            return string
+
+        except UnicodeDecodeError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
+        except UnicodeEncodeError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
+        except IOError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
+        except ValueError as er:
+            Log.write_log_to_db(data, er)
+            print(er)
+            return None
+
     @staticmethod
-    def parse_csv_table(excel_list):
-        lens = [len(row) for row in excel_list]
-        new_idx = max_idx = 0
-        new_len = max_len = 0
-        curr = lens[0]
+    def set_column_types(table):
+        new_table = []
+        transposed_table = list(zip(*table))
+        patterns = [
+            "%d-%m-%Y", "%Y-%m-%d", "%m-%d-%Y",
+            "%Y.%m.%d", "%d.%m.%Y", "%m.%d.%Y",
+            "%Y/%m/%d", "%d/%m/%Y", "%m/%d/%Y",
+            "%d-%m-%Y %H:%M:%S", "%Y-%m-%d %H:%M:%S", "%m-%d-%Y %H:%M:%S",
+            "%Y.%m.%d %H:%M:%S", "%d.%m.%Y %H:%M:%S", "%m.%d.%Y %H:%M:%S",
+            "%Y/%m/%d %H:%M:%S", "%d/%m/%Y %H:%M:%S", "%m/%d/%Y %H:%M:%S"
+        ]
+        for col in transposed_table:
+            row = [col[0]]
+            col_type = "s"
+            for entity in col[1:]:
+                for pattern in patterns:
+                    try:
+                        datetime.datetime.strptime(entity, pattern).date()
+                        col_type = "t"
+                    except:
+                        pass
+                if col_type != 't':
+                    try:
+                        int(entity)
+                        col_type = "d"
+                    except:
+                        try:
+                            float(entity.replace(".", ","))
+                            col_type = "c"
+                        except:
+                            if any(col[1:].count(x) > 1 for x in col[1:]):
+                                col_type = "d"
+                            else:
+                                col_type = "s"
+            row.append(col_type)
+            row += col[1:]
+            new_table.append(row)
+        return list(zip(*new_table))
 
-        for elem in lens:
-            if elem == curr:
-                new_len += 1
-                if max_len < new_len:
-                    max_len, max_idx = new_len, new_idx
+    @staticmethod
+    def most_common_len(excel_list):
+        len_list = [len(elem) for elem in excel_list]
+        count_list = [(elem, len_list.count(elem)) for elem in set(len_list)]
 
-            else:
-                if max_len < new_len:
-                    max_len, max_idx = new_len, new_idx
+        return max(count_list, key=lambda item: item[1])[0]
 
-                new_idx, new_len = lens.index(elem), 1
-                curr = elem
+    def parse_csv_table(self, excel_list):
+        end_list = []
+        mcl = self.most_common_len(excel_list)
+        for row in excel_list:
+            if len(row) == mcl:
+                end_list.append(row)
 
-        return excel_list[max_idx:max_idx+max_len]
+        return end_list
+
+    def strip_table(self, table):
+        new_table = []
+        delimiter = self.find_delimiter(table)
+        for row in table:
+            new_row = delimiter.join([str(i) for i in row.split(delimiter)[
+                                     :-1]]).strip(' %s' % delimiter).split(delimiter)
+            last_elem = [row.split(delimiter)[-1].strip()]
+            if last_elem != ['']:
+                new_row += last_elem
+
+            if new_row != ['']:
+                new_table.append(new_row)
+
+        return new_table, delimiter
+
+    @staticmethod
+    def find_delimiter(table):
+        max_delimiter = ''
+        count_semicolon = 0
+        count_comma = 0
+        for row in table:
+            count_semicolon += row.count(';')
+            count_comma += row.count(',')
+
+        return ';' if count_comma < count_semicolon else ','
 
     @staticmethod
     def document_text(filename):

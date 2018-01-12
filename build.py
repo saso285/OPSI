@@ -206,7 +206,7 @@ archives = ['zip', 'gz', 'bz2', 'rar']
 
 known_filetypes = ['csv', 'xls', 'xlsx', 'doc', 'docx', 'pdf', 'txt']
 
-convertables = ['xls', 'xlsx', 'doc', 'docx', 'pdf']
+convertables = ['xls', 'xlsx', 'doc', 'docx', 'pdf', 'csv']
 
 remap = {
     'csv': 'csv',
@@ -223,7 +223,7 @@ if not DATABASE.database_exists():
 
 start_data_pull()
 
-for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[5:]:
+for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li'):
     href = field.find('a').get('href')
     field_name = href.split('=')[-1]
     link = Urls.MAIN_URL + href + "&page={0}"
@@ -274,20 +274,14 @@ for field in soup.find('ul', attrs={'class': 'sectors'}).findAll('li')[5:]:
                     filename = write_to_cache(meta, metadata_json, field_name)
 
                     if archived(meta['url']):
-                        DATABASE.insert(Query.INSERT_UNKNOWN_EXTENSION.format(
-                            dataset_title, field_name, extension,
-                            remap[meta['format'].lower().strip()]))
+                        # Skip
                         continue
 
                     if filetype_convertable(extension):
                         content = CONVERT.get_text(filename)
 
                     else:
-                        if extension == "csv":
-                            content = CONVERT.parse_csv_table(
-                                get_html(meta['url']).replace('"', '\''))
-                        else:
-                            content = get_html(meta['url']).replace('"', '\'')
+                        content = get_html(meta['url']).replace('"', '\'')
 
                     if not dataset_source_exists(dataset_title, meta['url']) or\
                             dataset_source_exists(dataset_title, meta['url']) and\
