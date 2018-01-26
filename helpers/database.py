@@ -146,13 +146,13 @@ class Database(object):
         :param data: data object
         :return: insert success boolean
         """
-        query = '''INSERT INTO Dataset Values(null, "%s", "%s", "%s", "%s", "%s", "%s", "%s", "%s");'''
+        query = """INSERT INTO Dataset Values(null, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');"""
 
         try:
             db = self.get_db()
             conn = db.cursor()
             conn.execute(query % (data.name, data.field, data.link, data.type,
-                                  data.parsed_type, data.filename, data.content, 
+                                  data.parsed_type, data.filename, data.content.replace("'", "\"") if data.content else "", 
                                   data.update))
             db.commit()
             return True
