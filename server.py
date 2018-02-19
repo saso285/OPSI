@@ -50,12 +50,19 @@ def error_percentage():
     :return: array of dictionaries with labels and percents
     """
     error_percentage = Statistics.error_percentage()
-    error = [{'label': 'complete', 'y': "{0:.2f}".format(
+    error = [{'label': 'complete', 'y': "{0:.1f}".format(
         (1 - error_percentage) * 100)}]
     if error_percentage > 0:
         error.append(
-            {'label': 'error', 'y': "{0:.2f}".format(error_percentage * 100)})
+            {'label': 'error', 'y': "{0:.1f}".format(error_percentage * 100)})
     return jsonify(result=error)
+
+
+@app.route('/statistics/percentage', methods=['GET'])
+def dataset_error_num():
+    dataset_count = Statistics.dataset_num()
+    error_count = Statistics.error_count()
+    return jsonify(result={"dataset_num": dataset_count, "error_count": error_count})
 
 
 @app.route('/statistics/types', methods=['GET'])
@@ -66,7 +73,11 @@ def type_count():
     types = []
     for typ in Statistics.all_type():
         types.append({'label': typ.lower(), 'y': Statistics.type_count(typ)})
-    return jsonify(result=types)
+    fix_types = []
+    for i in sorted(types, key=lambda k: k['y']):
+        if i['y'] != 0:
+            fix_types.append(i)
+    return jsonify(result=fix_types)
 
 
 @app.route('/statistics/extension', methods=['GET'])
@@ -78,7 +89,11 @@ def unknown_extension_count():
     for ext in Statistics.all_unknown_extension():
         extensions.append(
             {'label': ext, 'y': Statistics.count_unknown_extension(ext)})
-    return jsonify(result=extensions)
+    fix_extensions = []
+    for i in reversed(sorted(extensions, key=lambda k: k['y'])):
+        if i['y'] != 0:
+            fix_extensions.append(i)
+    return jsonify(result=fix_extensions)
 
 
 @app.route('/statistics/accessible', methods=['GET'])
@@ -87,6 +102,11 @@ def data_pull_success():
     :return: float data pull success percentage
     """
     return jsonify(result=Statistics.accessible_data())
+
+
+@app.route('/statistics/countData', methods=['GET'])
+def count_all_accessible_data():
+    return jsonify(result={"accessible": Statistics.count_all_accessible_data(), "all": Statistics.count_all_data()})
 
 
 @app.route('/fields', methods=['GET'])

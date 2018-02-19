@@ -28,3 +28,7 @@ h1 {
 #fieldsChart {
     display: None;
 }
+
+#errorCount, #transformedData {
+    padding-left: 2em
+}

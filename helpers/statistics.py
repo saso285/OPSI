@@ -58,6 +58,14 @@ def count_unknown_extension(ext):
     return DB.select(Query.SELECT_COUNT_UNKNOWN_EXTENSION.format(ext))
 
 
+def count_all_data():
+    return DB.select(Query.SELECT_ALL_DATA)
+
+
+def count_all_accessible_data():
+    return DB.select(Query.SELECT_ALL_ACCESSIBLE_DATA)
+
+
 def type_count(typ):
     """ Get known data type row count
     :param ext: known data type extension

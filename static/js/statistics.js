@@ -9,10 +9,10 @@ function progresBarCircle() {
             autoStyleContainer: false
         },
         from: {
-            color: '#b54d4d', width: 6
+            color: '#5182ba', width: 6
         },
         to: {
-            color: '#9cba5e', width: 6
+            color: '#5182ba', width: 6
         },
         step: function (state, circle) {
             circle.path.setAttribute('stroke', state.color);
@@ -71,6 +71,10 @@ $(document).ready(function () {
     var selectorUnknownExtensionsCount = $('#unknownExtensionChart');
     var selectorFieldsList = $('#fieldsList');
     var selectorFieldsChart = $('#fieldsChart');
+    var selectorDatasetNum = $('#datasetNum');
+    var selectorErrorCount = $('#errorCount');
+    var selectorAllData = $('#allData');
+    var selectorTransformedData = $('#transformedData');
     var bar = progresBarCircle();
 
     bar.text.style.fontFamily = '"Raleway", Helvetica, sans-serif';
@@ -78,7 +82,7 @@ $(document).ready(function () {
 
     selectorFieldsChart.hide();
 
-    function setOptionsPieChart(name, data, type) {
+    function setOptionsPieChart(name, data, type, indexLabel) {
         return {
             title: {
                 text: name,
@@ -87,9 +91,7 @@ $(document).ready(function () {
             data: [{
                 type: type,
                 startAngle: 30,
-                showInLegend: "true",
-                legendText: "{label}",
-                indexLabel: "{label} ({y})",
+                indexLabel: indexLabel,
                 yValueFormatString: "#,##0.#" % "",
                 dataPoints: data
             }]
@@ -97,20 +99,29 @@ $(document).ready(function () {
     }
 
     selectorTypePercentage.CanvasJSChart(setOptionsPieChart(
-        "Data type count",
+        "Transformed data type count",
         ajaxGetHttpRequest('/statistics/types'),
-        "bar"
+        "bar",
+        "{y}"
     ));
     selectorErrorPercentage.CanvasJSChart(setOptionsPieChart(
-        "Error occurrence percentage",
+        "Error occurrence percentage while performing data pull",
         ajaxGetHttpRequest('/statistics/error'),
-        "pie"
+        "pie",
+        "{label} ({y}%)"
     ));
     selectorUnknownExtensionsCount.CanvasJSChart(setOptionsPieChart(
-        "Unknown extension count",
+        "Transformation error by type",
         ajaxGetHttpRequest('/statistics/extension'),
-        "pie"
+        "pie",
+        "{label} ({y})"
     ));
+    var percentage = ajaxGetHttpRequest('/statistics/percentage');
+    selectorDatasetNum.text("Complete count: " + percentage.dataset_num)
+    selectorErrorCount.text("Error count: " + percentage.error_count)
+    var percentage = ajaxGetHttpRequest('/statistics/countData');
+    selectorAllData.text("All files: " + percentage.all)
+    selectorTransformedData.text("Transformed files: " + percentage.accessible)
     bar.animate(ajaxGetHttpRequest('/statistics/accessible'));
     ajaxGetHttpRequest('/fields').forEach(function(elem) {
         var aHref = '<option value="' + elem + '">' + elem + '</a>';
@@ -121,7 +132,8 @@ $(document).ready(function () {
         selectorFieldsChart.CanvasJSChart(setOptionsPieChart(
             "Field statistics",
             ajaxPostHttpRequest('/statistics/field', {'field': field}),
-            "pie"
+            "pie",
+            true
         ));
         selectorFieldsChart.show();
     });

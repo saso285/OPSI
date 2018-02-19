@@ -10,6 +10,8 @@ __version__ = "1.0.0"
 class Query(object):
 
     SELECT_ACCESSIBLE_DATA = """SELECT seq/CAST((SELECT SUM(seq) FROM sqlite_sequence WHERE name='Dataset' OR name='Error' OR name='Extension') AS float) FROM sqlite_sequence WHERE name='Dataset';"""
+    SELECT_ALL_DATA = """SELECT SUM(seq) FROM sqlite_sequence WHERE name='Dataset' OR name='Error' OR name='Extension';"""
+    SELECT_ALL_ACCESSIBLE_DATA = """SELECT seq FROM sqlite_sequence WHERE name='Dataset';"""
 
     SELECT_COUNT_DATASET = """SELECT seq from sqlite_sequence WHERE name='Dataset';"""
     SELECT_COUNT_ERROR = """SELECT seq from sqlite_sequence WHERE name='Error';"""
