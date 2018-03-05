@@ -16,16 +16,28 @@ class Tree(object):
     
     @staticmethod
     def fields():
+        """ Get name of all fields
+        :return: list of fields
+        """
         return DB.select(Query.SELECT_ALL_FIELD)
 
     @staticmethod
     def datasets(field):
+        """ Get all datasets of specific field
+        :param field: field name
+        :return: list of all datasets
+        """
         return DB.select(Query.SELECT_ALL_DATASET.format(field))
 
     @staticmethod
     def files(dataset):
+        """ Get all files of a specific dataset
+        :param dataset: dataset name
+        :return: list of files
+        """
         files = []
         links = DB.select_many(Query.SELECT_ALL_FILES.format(dataset))
+
         for link in links:
             file_info = {
                 'id': link[0],
@@ -35,8 +47,13 @@ class Tree(object):
                 'revision_id': link[4],
             }
             files.append(file_info)
+
         return files
 
     @staticmethod
     def file_content(file_name):
+        """ Get content of a specific file
+        :param file_name: file name
+        :return: string content of specific file
+        """
         return DB.select(Query.SELECT_GET_FILE.format(file_name))

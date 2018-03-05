@@ -11,4 +11,8 @@ class Read(object):
 
     @staticmethod
     def file(filename):
+        """ Return content of the provided file
+        :param filename: name of the file
+        :return: csv content as string
+        """
         return str(open(filename, 'r').read())

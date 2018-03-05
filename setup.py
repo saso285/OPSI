@@ -18,6 +18,10 @@ devnull = open(os.devnull, 'w')
 
 
 def download(url):
+    """ Return file download success status
+    :param url: link to the file
+    :return: download success
+    """
     file_name = url.split('/')[-1]
     http = urllib3.PoolManager()
     r = http.request('GET', url, preload_content=False)
@@ -38,6 +42,9 @@ def download(url):
 
 
 def install_pip():
+    """ Return pip install success status
+    :return: install success
+    """
     try:
         import pip
         return True
@@ -49,6 +56,9 @@ def install_pip():
 
 
 def install_prerequisites():
+    """ Return library install success status
+    :return: install success
+    """
     return call(["pip3", "install", "-r", "requirements.txt"],
                 stdout=devnull, stderr=devnull) == 0
 

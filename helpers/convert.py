@@ -54,6 +54,7 @@ class Convert(object):
             line = []
             for row in range(sheet.nrows):
                 line = [str(item) for item in sheet.row_values(row) if item]
+
                 if line:
                     excel_content.append(line)
 
@@ -78,10 +79,15 @@ class Convert(object):
         return '\n'.join(excel_content).replace('"', '\'').strip() or None
 
     def csv_text(self, filename):
+        """ Parse content from csv file
+        :param filename: name of the file
+        :return: csv content
+        """
         csv_content = []
         path = filename.split('/')[-3:]
         data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
                     link='/'.join(path[-3:]))
+
         try:
             f = open(filename)
             csv_content = f.readlines()
@@ -112,6 +118,10 @@ class Convert(object):
 
     @staticmethod
     def set_column_types(table):
+        """ Determine types of columns in csv file
+        :param filename: name of the file
+        :return: string as csv
+        """
         new_table = []
         transposed_table = list(zip(*table))
         patterns = [
@@ -125,26 +135,33 @@ class Convert(object):
         for col in transposed_table:
             row = [col[0]]
             col_type = "s"
+
             for entity in col[1:]:
                 for pattern in patterns:
                     try:
                         datetime.datetime.strptime(entity, pattern).date()
                         col_type = "t"
+
                     except:
                         pass
+
                 if col_type != 't':
                     try:
                         int(entity)
                         col_type = "d"
+
                     except:
                         try:
                             float(entity.replace(".", ","))
                             col_type = "c"
+
                         except:
                             if any(col[1:].count(x) > 1 for x in col[1:]):
                                 col_type = "d"
+
                             else:
                                 col_type = "s"
+
             row.append(col_type)
             row += col[1:]
             new_table.append(row)
@@ -152,14 +169,23 @@ class Convert(object):
 
     @staticmethod
     def most_common_len(excel_list):
+        """ Return the most common row length from csv file
+        :param excel_list: list of rows from csv file
+        :return: most common row length
+        """
         len_list = [len(elem) for elem in excel_list]
         count_list = [(elem, len_list.count(elem)) for elem in set(len_list)]
 
         return max(count_list, key=lambda item: item[1])[0]
 
     def parse_csv_table(self, excel_list):
+        """ Parse rows with same length from csv file
+        :param excel_list: list of rows from csv
+        :return: list of rows with common length
+        """
         end_list = []
         mcl = self.most_common_len(excel_list)
+
         for row in excel_list:
             if len(row) == mcl:
                 end_list.append(row)
@@ -167,12 +193,18 @@ class Convert(object):
         return end_list
 
     def strip_table(self, table):
+        """ Return file in correct stripped form
+        :param table: list of rows
+        :return: parsed/striped table content, delimiter
+        """
         new_table = []
         delimiter = self.find_delimiter(table)
+
         for row in table:
             new_row = delimiter.join([str(i) for i in row.split(delimiter)[
                                      :-1]]).strip(' %s' % delimiter).split(delimiter)
             last_elem = [row.split(delimiter)[-1].strip()]
+
             if last_elem != ['']:
                 new_row += last_elem
 
@@ -183,9 +215,14 @@ class Convert(object):
 
     @staticmethod
     def find_delimiter(table):
+        """ Return the delimiter for cells in csv
+        :param table: list of rows
+        :return: delimiter
+        """
         max_delimiter = ''
         count_semicolon = 0
         count_comma = 0
+
         for row in table:
             count_semicolon += row.count(';')
             count_comma += row.count(',')
@@ -194,14 +231,15 @@ class Convert(object):
 
     @staticmethod
     def document_text(filename):
-        """ Return the document based file as txt string
+        """ Return the content of a document file
         :param filename: name of the file
-        :return: string as txt
+        :return: document file content
         """
         path = filename.split('/')[-3:]
         data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
                     link='/'.join(path[-3:]))
         document_content = ""
+
         try:
             document = docx.Document(filename)
             for row in document.paragraphs:
@@ -228,9 +266,11 @@ class Convert(object):
         data = Data(typ=path[-1].split('.')[-1], field=path[-3], name=path[-2],
                     link='/'.join(path[-3:]))
         pdf_content = ""
+
         try:
             input_file = open(filename, "rb")
             reader = PdfFileReader(input_file, strict=False)
+
             for page in range(0, reader.getNumPages()):
                 pdf_content += reader.getPage(page).extractText()
 

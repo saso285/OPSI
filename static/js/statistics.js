@@ -116,12 +116,15 @@ $(document).ready(function () {
         "pie",
         "{label} ({y})"
     ));
+
     var percentage = ajaxGetHttpRequest('/statistics/percentage');
     selectorDatasetNum.text("Complete count: " + percentage.dataset_num)
     selectorErrorCount.text("Error count: " + percentage.error_count)
+
     var percentage = ajaxGetHttpRequest('/statistics/countData');
     selectorAllData.text("All files: " + percentage.all)
     selectorTransformedData.text("Transformed files: " + percentage.accessible)
+
     bar.animate(ajaxGetHttpRequest('/statistics/accessible'));
     ajaxGetHttpRequest('/fields').forEach(function(elem) {
         var aHref = '<option value="' + elem + '">' + elem + '</a>';

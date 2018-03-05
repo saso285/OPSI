@@ -59,10 +59,16 @@ def count_unknown_extension(ext):
 
 
 def count_all_data():
+    """ Return count of all datasets
+    :return: integer count of datasets
+    """
     return DB.select(Query.SELECT_ALL_DATA)
 
 
 def count_all_accessible_data():
+    """ Return count of all accessible datasets
+    :return: integer count of accessible datasets
+    """
     return DB.select(Query.SELECT_ALL_ACCESSIBLE_DATA)
 
 
@@ -75,10 +81,16 @@ def type_count(typ):
 
 
 def field_type_count(field):
+    """ Return the count of specific field dataset count
+    :param field: name of a field
+    :return: dictionary field dataset count
+    """
     type_count = []
+
     for typ in DB.select(Query.SELECT_ALL_TYPE_FORMAT):
         type_count.append({'label': typ, 'y': DB.select(
             Query.SELECT_COUNT_TYPE_FIELD.format(typ, field))})
+
     return type_count
 
 
